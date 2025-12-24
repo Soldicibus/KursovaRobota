@@ -1,0 +1,329 @@
+:root {
+  --primary: #00633d;
+  --accent: #4b9771;
+  --muted-bg: rgba(0, 0, 0, 0.03);
+  --card-bg: rgba(0, 0, 0, 0.15);
+  --fg: #fff;
+}
+.main {
+  padding: 18px 20px 120px;
+  color: var(--fg);
+  max-width: 1100px;
+  margin: 0 20vw;
+}
+.main__header {
+  margin-top: 8px;
+  margin-bottom: 6px;
+  transform: translateY(-8px);
+}
+.main__header h1 {
+  margin: 0;
+  font-size: 3rem;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+.tabs button {
+  background: transparent;
+  width: 12vw;
+  font-size: medium;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #fff;
+  padding: 11px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tabs button.active {
+  background: #fff;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* Add style for student selector buttons */
+.student-selector button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.student-selector button.active {
+  background: #fff;
+  color: var(--primary);
+  font-weight: 700;
+  border-color: #fff;
+}
+
+.student-selector button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.student-selector button:hover {
+  background-color: #6cd5a0;
+  transition: 300ms;
+}
+.tab-content {
+  margin-top: 12px;
+}
+.journal-card {
+  padding: 8px;
+  background: var(--muted-bg);
+  border-radius: 10px;
+}
+.journal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.journal-table th,
+.journal-table td {
+  padding: 18px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  text-align: center;
+  font-size: 1rem;
+}
+.journal-table th:first-child,
+.journal-table td:first-child {
+  text-align: left;
+  font-weight: 700;
+}
+.subject-cell {
+  font-weight: 700;
+}
+.mark-cell {
+  min-width: 48px;
+}
+.homework-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+}
+.homework-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+.homework-card:hover {
+  transform: translateY(-3px);
+  background-color: #004c2f;
+  transition: 320ms;
+}
+.homework-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.homework-card .hw-meta {
+  display: flex;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+}
+.homework-card .hw-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 320ms ease, padding 320ms ease;
+}
+.homework-card[aria-expanded="true"] {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+.homework-card[aria-expanded="true"] .hw-body {
+  max-height: 240px;
+  padding-top: 10px;
+}
+.btn {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.attendance-summary {
+  width: auto;
+  border-collapse: collapse;
+}
+.attendance-summary th,
+.attendance-summary td {
+  padding: 6px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.attendance-status {
+  margin-top: 8px;
+    text-align: center;
+  font-size: 0.95rem;
+}
+.attendance-ok {
+  color: #1a7f37; /* green */
+  font-weight: 600;
+}
+.attendance-bad {
+  color: #c62828; /* red */
+  font-weight: 600;
+}
+
+/* Journal layout improvements */
+.journal-card {
+  padding: 16px;
+}
+.journal-by-date {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.journal-by-date::-webkit-scrollbar {
+  height: 10px;
+}
+.journal-by-date::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 8px;
+}
+.journal-column {
+  min-width: 280px;
+  max-width: 360px;
+  flex: 0 0 320px;
+  scroll-snap-align: start;
+}
+.journal-subject-card {
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: #ffffff38;
+}
+.journal-other-subjects .subject-card {
+  border: 1px solid #eee;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card.schedule-card {
+  padding: 22px;
+  background: var(--muted-bg);
+  border-radius: 10px;
+  height: max-content;
+  width: max-content;
+  font-size: x-large;
+}
+.week-grid {
+  display: block;
+}
+.week-header {
+  display: grid;
+  grid-template-columns: 80px repeat(5, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.week-header .time-col {
+  font-weight: 700;
+}
+.day-col {
+  text-align: center;
+  padding: 8px 6px;
+}
+.week-body {
+  margin-top: 8px;
+}
+.row {
+  display: grid;
+  grid-template-columns: 80px repeat(5, 1fr);
+  margin-top: 8px;
+  gap: 8px;
+  align-items: center;
+}
+.time-col {
+  padding: 8px 6px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+.cell {
+  min-height: 80px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 6px;
+}
+.lesson {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 6px;
+  height: 80px;
+  border-radius: 6px;
+}
+.lesson-subject {
+  font-weight: 700;
+  text-align: center;
+}
+.materials-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  text-align: center;
+  gap: 12px;
+}
+.material-card.small {
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 15px;
+}
+.materials-table td {
+  padding: 6px 8px;
+}
+.card {
+  background: var(--card-bg);
+  margin: 1vw;
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th,
+.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.materials-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+@media (max-width: 700px) {
+  .week-header,
+  .row {
+    grid-template-columns: 60px repeat(2, 1fr);
+  }
+  .journal-table th,
+  .journal-table td {
+    padding: 6px 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .homework-card,
+  .homework-card .hw-body {
+    transition: none;
+  }
+}
