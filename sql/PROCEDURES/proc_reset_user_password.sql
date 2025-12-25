@@ -19,6 +19,8 @@ BEGIN
         USING ERRCODE = '23514';
     END IF;
 
+    p_new_password := crypt(p_new_password, gen_salt('bf'));
+
     UPDATE users
     SET password = p_new_password
     WHERE user_id = p_user_id;
