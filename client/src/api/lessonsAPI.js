@@ -11,6 +11,12 @@ export const getLessonById = async (id) => {
   return data.lesson;
 };
 
+export const getLessonsByTeacher = async (teacherId) => {
+  const request = await api.get(`/lessons/teacher/${teacherId}`);
+  const data = request.data;
+  return data.lessons;
+};
+
 export const getLessonByName = async (name) => {
   let decoded = name;
   try {
@@ -22,6 +28,19 @@ export const getLessonByName = async (name) => {
   const request = await api.get(`/lessons/name/${safeSegment}`);
   const data = request.data;
   return data.lesson;
+};
+
+export const getLessonsByTeacherAndName = async (teacherId, name) => {
+  let decoded = name;
+  try {
+    decoded = decodeURIComponent(name);
+  } catch {
+    decoded = name;
+  }
+  const safeSegment = encodeURIComponent(decoded);
+  const request = await api.get(`/lessons/teacher/${teacherId}/name/${safeSegment}`);
+  const data = request.data;
+  return data.lessons;
 };
 
 export const createLesson = async ({

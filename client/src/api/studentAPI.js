@@ -1,8 +1,29 @@
 import api from "./lib/api.js";
 
+function sanitizePayload(obj) {
+  const out = {};
+  if (!obj || typeof obj !== 'object') return out;
+  Object.keys(obj).forEach((k) => {
+    const v = obj[k];
+    // treat empty string and undefined as explicit NULL for server-side
+    if (v === '') {
+      out[k] = null;
+    } else if (v === undefined) {
+      // skip undefined entirely so it's not sent
+    } else {
+      out[k] = v;
+    }
+  });
+  return out;
+}
+
 export const getAllStudents = async () => {
   const request = await api.get("/students");
 
+  return request.data.students;
+};
+export const getAllStudentsM = async () => {
+  const request = await api.get("/students/m");
   return request.data.students;
 };
 export const getStudentAVGAbove7 = async () => {
@@ -20,11 +41,23 @@ export const getStudentRanking = async () => {
   const data = request.data;
   return data;
 };
+export const getStudentPerformanceMatrix = async (studentId) => {
+  const request = await api.get(`/students/performance-matrix/${studentId}`);
+  const data = request.data;
+  return data.students ?? data;
+};
+export const getStudentMonthlyMarks = async (studentId, month) => {
+  // month should be a string in YYYY-MM-DD or YYYY-MM format, or null
+  const request = await api.get(`/students/monthly-marks/${studentId}`, {
+    params: { month },
+  });
+  return request.data;
+};
 export const getStudentByParentId = async (id) => {
   const request = await api.get(`/students/by-parent/${id}`);
   const data = request.data;
   return data.student ?? data;
-}
+};
 export const getGradesAndAbsences = async (id) => {
   const request = await api.get(`/students/grades-and-absences/${id}`);
 
@@ -70,13 +103,29 @@ export const createStudent = async ({
   phone,
   class_c,
 }) => {
-  const request = await api.post("/students", {
+  const body = sanitizePayload({ name, surname, patronym, phone, class_c });
+  const request = await api.post("/students", body);
+
+  return request;
+};
+
+export const createStudentWithUser = async ({
+  name,
+  surname,
+  patronym,
+  phone,
+  class_c,
+  user_id,
+}) => {
+  const body = sanitizePayload({
     name,
     surname,
     patronym,
     phone,
     class_c,
+    user_id,
   });
+  const request = await api.post("/students/user", body);
 
   return request;
 };
@@ -89,13 +138,8 @@ export const patchStudent = async ({
   phone,
   class_c,
 }) => {
-  const request = await api.patch(`/students/${id}`, {
-    name,
-    surname,
-    patronym,
-    phone,
-    class_c,
-  });
+  const body = sanitizePayload({ id, name, surname, patronym, phone, class_c });
+  const request = await api.patch(`/students/${id}`, body);
 
   return request;
 };

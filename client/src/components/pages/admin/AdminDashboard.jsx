@@ -13,6 +13,7 @@ import { useHomework } from "../../../hooks/homework/queries/useHomework";
 import { useTimetables } from "../../../hooks/timetables/queries/useTimetables";
 import { useDays } from "../../../hooks/days/queries/useDays";
 import { useMaterials } from "../../../hooks/materials/queries/useMaterials";
+import { useAuditLogs } from "../../../hooks/auditlogs/queries/useAuditLogs";
 
 export default function AdminDashboard() {
   const { data: users, isLoading: usersLoading } = useUsers();
@@ -29,6 +30,7 @@ export default function AdminDashboard() {
   const { data: timetables } = useTimetables();
   const { data: days } = useDays();
   const { data: materials } = useMaterials();
+  const { data: auditLogs } = useAuditLogs();
 
   const cards = [
     { title: 'Users', count: users?.length, loading: usersLoading },
@@ -45,6 +47,7 @@ export default function AdminDashboard() {
     { title: 'Timetables', count: timetables?.length },
     { title: 'Days', count: days?.length },
     { title: 'Materials', count: materials?.length },
+    { title: 'Audit Logs', count: auditLogs?.length },
   ];
 
   return (

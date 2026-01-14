@@ -1,27 +1,45 @@
 import React, { useState } from 'react';
 import DataTable from '../../../common/DataTable';
+import { useStudents } from '../../../../hooks/students/queries/useStudents';
+import { useAssignParentToStudent } from '../../../../hooks/studentparents/mutations/useAssignParentToStudent';
 import { useParents } from '../../../../hooks/parents/queries/useParents';
 import { useCreateParent } from '../../../../hooks/parents/mutations/useCreateParent';
 import { useUpdateParent } from '../../../../hooks/parents/mutations/useUpdateParent';
 import { useDeleteParent } from '../../../../hooks/parents/mutations/useDeleteParent';
+import { useCreateUser } from '../../../../hooks/users/mutations/useCreateUser';
 import { useAdminPermissions } from '../../../../hooks/useAdminPermissions';
 import Modal from '../../../common/Modal';
-import { useStudents } from '../../../../hooks/students/queries/useStudents';
-import { useAssignParentToStudent } from '../../../../hooks/studentparents/mutations/useAssignParentToStudent';
+import ErrorModal from '../../../common/ErrorModal';
+
+const formatPhoneInput = (val) => {
+  if (!val) return '';
+  const digits = val.replace(/\D/g, '').slice(0, 10);
+  if (digits.length < 4) return digits;
+  if (digits.length < 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
 
 export default function ParentsTable() {
   const { data: parents, isLoading } = useParents();
-  const { permissions } = useAdminPermissions();
+  const { permissions, isSAdmin } = useAdminPermissions();
+
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const createMutation = useCreateParent();
   const updateMutation = useUpdateParent();
   const deleteMutation = useDeleteParent();
+  const createUserMutation = useCreateUser();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingParent, setEditingParent] = useState(null);
   const [formData, setFormData] = useState({
     name: '', surname: '', patronym: '', phone: ''
   });
+
+  // User creation state
+  const [createUserEnabled, setCreateUserEnabled] = useState(false);
+  const [userData, setUserData] = useState({ username: '', email: '', password: '' });
+
   const { data: students } = useStudents();
   const assignMutation = useAssignParentToStudent();
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -33,7 +51,7 @@ export default function ParentsTable() {
       name: item.parent_name || '',
       surname: item.parent_surname || '',
       patronym: item.parent_patronym || '',
-      phone: item.parent_phone || ''
+      phone: formatPhoneInput(item.parent_phone || ''),
     });
     setIsModalOpen(true);
   };
@@ -43,7 +61,7 @@ export default function ParentsTable() {
       try {
         await deleteMutation.mutateAsync(item.parent_id);
       } catch (error) {
-        alert('Error deleting parent: ' + error.message);
+        setErrorMessage('Error deleting parent: ' + error.message);
       }
     }
   };
@@ -51,23 +69,40 @@ export default function ParentsTable() {
   const handleCreate = () => {
     setEditingParent(null);
     setFormData({ name: '', surname: '', patronym: '', phone: '' });
+    setCreateUserEnabled(false);
+    setUserData({ username: '', email: '', password: '' });
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let createdUserId = null;
+
+      if (!editingParent && createUserEnabled) {
+        const userResponse = await createUserMutation.mutateAsync(userData);
+        createdUserId = userResponse?.user_id || userResponse?.id || userResponse?.user?.user_id;
+        if (!createdUserId) throw new Error("Failed to retrieve new User ID");
+      }
+
+      const payload = {
+        ...formData,
+        patronym: formData.patronym || null,
+        phone: formData.phone || null,
+        user_id: createdUserId
+      };
+
       if (editingParent) {
         await updateMutation.mutateAsync({
           id: editingParent.parent_id,
-          ...formData
+          ...payload
         });
       } else {
-        await createMutation.mutateAsync(formData);
+        await createMutation.mutateAsync(payload);
       }
       setIsModalOpen(false);
     } catch (error) {
-      alert('Error: ' + error.message);
+      setErrorMessage('Error: ' + error.message);
     }
   };
 
@@ -103,6 +138,11 @@ export default function ParentsTable() {
         canDelete={permissions.parents.delete}
         canCreate={permissions.parents.create}
       />
+      
+      <ErrorModal 
+        error={errorMessage} 
+        onClose={() => setErrorMessage(null)} 
+      />
 
       <Modal
         isOpen={isModalOpen}
@@ -110,6 +150,57 @@ export default function ParentsTable() {
         title={editingParent ? 'Edit Parent' : 'Create Parent'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!editingParent && isSAdmin && (
+            <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+              <div className="flex items-center mb-2">
+                <input
+                  id="createUser"
+                  type="checkbox"
+                  checked={createUserEnabled}
+                  onChange={(e) => setCreateUserEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label htmlFor="createUser" className="ml-2 block text-sm text-gray-900 font-medium">
+                  Create User Account
+                </label>
+              </div>
+              
+              {createUserEnabled && (
+                <div className="space-y-3 pl-6 border-l-2 border-indigo-200 ml-1">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700">Username</label>
+                    <input
+                      type="text"
+                      value={userData.username}
+                      onChange={(e) => setUserData({ ...userData, username: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs"
+                      required={createUserEnabled}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700">Email</label>
+                    <input
+                      type="email"
+                      value={userData.email}
+                      onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs"
+                      required={createUserEnabled}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700">Password</label>
+                    <input
+                      type="password"
+                      value={userData.password}
+                      onChange={(e) => setUserData({ ...userData, password: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs"
+                      required={createUserEnabled}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700">Name</label>
             <input
@@ -144,8 +235,12 @@ export default function ParentsTable() {
             <input
               type="text"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, phone: formatPhoneInput(e.target.value) })}
+              placeholder="0xx-xxx-xxxx"
+              pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}"
+              maxLength="12"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
+              required
             />
           </div>
           <div className="flex justify-end space-x-3 pt-4">
@@ -178,7 +273,7 @@ export default function ParentsTable() {
               await assignMutation.mutateAsync({ studentId: assignData.studentId, parentId: assignData.parentId });
               setIsAssignModalOpen(false);
             } catch (err) {
-              alert('Error assigning student: ' + (err.message || err));
+              setErrorMessage('Error assigning student: ' + (err.message || err));
             }
           }}
           className="space-y-4"

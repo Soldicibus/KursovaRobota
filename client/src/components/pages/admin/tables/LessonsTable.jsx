@@ -10,6 +10,7 @@ import { useMaterials } from '../../../../hooks/materials/queries/useMaterials';
 import { useTeachers } from '../../../../hooks/teachers/queries/useTeachers';
 import { useAdminPermissions } from '../../../../hooks/useAdminPermissions';
 import Modal from '../../../common/Modal';
+import ErrorModal from '../../../common/ErrorModal';
 
 export default function LessonsTable() {
   const { data: lessons, isLoading } = useLessons();
@@ -24,6 +25,8 @@ export default function LessonsTable() {
   const { data: materials } = useMaterials();
   const { data: teachers } = useTeachers();
 
+  const [errorMessage, setErrorMessage] = useState(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
   const [formData, setFormData] = useState({
@@ -32,13 +35,24 @@ export default function LessonsTable() {
 
   const handleEdit = (item) => {
     setEditingLesson(item);
+    
+    let formattedDate = '';
+    if (item.lesson_date) {
+      const d = new Date(item.lesson_date);
+      formattedDate = d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0') + 'T' +
+        String(d.getHours()).padStart(2, '0') + ':' +
+        String(d.getMinutes()).padStart(2, '0');
+    }
+
     setFormData({
       name: item.lesson_name || '',
-      className: item.class_name || '', 
+      className: item.lesson_class || '', 
       subjectId: item.lesson_subject || '',
       materialId: item.lesson_material || '',
       teacherId: item.lesson_teacher || '',
-      date: item.lesson_date ? new Date(item.lesson_date).toISOString().split('T')[0] : ''
+      date: formattedDate
     });
     setIsModalOpen(true);
   };
@@ -48,7 +62,7 @@ export default function LessonsTable() {
       try {
         await deleteMutation.mutateAsync(item.lesson_id);
       } catch (error) {
-        alert('Error deleting lesson: ' + error.message);
+        setErrorMessage('Error deleting lesson: ' + error.message);
       }
     }
   };
@@ -63,10 +77,10 @@ export default function LessonsTable() {
     e.preventDefault();
     try {
       const payload = {
-        name: formData.name,
+        name: formData.name || null,
         className: formData.className,
         subjectId: formData.subjectId,
-        materialId: formData.materialId,
+        materialId: formData.materialId || null,
         teacherId: formData.teacherId,
         date: formData.date
       };
@@ -81,7 +95,7 @@ export default function LessonsTable() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      alert('Error: ' + error.message);
+      setErrorMessage('Error: ' + error.message);
     }
   };
 
@@ -89,7 +103,21 @@ export default function LessonsTable() {
     { header: 'ID', accessor: 'lesson_id' },
     { header: 'Name', accessor: 'lesson_name' },
     { header: 'Class', accessor: 'lesson_class' },
-    { header: 'Date', accessor: 'lesson_date' },
+    { 
+      header: 'Date', 
+      accessor: 'lesson_date',
+      render: (row) => {
+        if (!row.lesson_date) return '';
+        return new Date(row.lesson_date).toLocaleString('uk-UA', { 
+         year: 'numeric', 
+         month: '2-digit', 
+         day: '2-digit', 
+         hour: '2-digit', 
+         minute: '2-digit',
+         timeZone: 'Europe/Kiev'
+        });
+      }
+    },
     { header: 'Teacher ID', accessor: 'lesson_teacher' },
     { header: 'Subject ID', accessor: 'lesson_subject' },
   ];
@@ -108,6 +136,8 @@ export default function LessonsTable() {
         canDelete={permissions.others.delete}
         canCreate={permissions.others.create}
       />
+      
+      <ErrorModal error={errorMessage} onClose={() => setErrorMessage(null)} />
 
       <Modal
         isOpen={isModalOpen}
@@ -122,13 +152,12 @@ export default function LessonsTable() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
-              required
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Date</label>
             <input
-              type="date"
+              type="datetime-local"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"

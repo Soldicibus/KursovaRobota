@@ -31,6 +31,12 @@ export function useAdminPermissions() {
       edit: isSAdmin,
       delete: isSAdmin,
     },
+    auditLogs: {
+      view: isSAdmin,
+      delete: isSAdmin,
+      edit: false,
+      create: false,
+    },
     others: {
       create: isSAdmin || isAdmin,
       edit: isSAdmin || isAdmin,

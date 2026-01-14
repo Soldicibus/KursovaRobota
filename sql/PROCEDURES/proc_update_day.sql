@@ -7,24 +7,26 @@ CREATE OR REPLACE PROCEDURE proc_update_day
     IN p_weekday varchar(20) DEFAULT NULL
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM days WHERE day_id = p_id
+        SELECT 1 FROM vws_days WHERE day_id = p_id
     ) THEN
         RAISE EXCEPTION 'Day % does not exist', p_id
         USING ERRCODE = '22003';
     END IF;
 	
 	IF NOT EXISTS (
-        SELECT 1 FROM timetable WHERE timetable_id = p_timetable
+        SELECT 1 FROM vws_timetables WHERE timetable_id = p_timetable
     ) THEN
         RAISE EXCEPTION 'Timetable % does not exist', p_timetable
         USING ERRCODE = '22003';
     END IF;
 
 	IF NOT EXISTS (
-        SELECT 1 FROM subjects WHERE subject_id = p_subject
+        SELECT 1 FROM vws_subjects WHERE subject_id = p_subject
     ) THEN
         RAISE EXCEPTION 'Subject % does not exist', p_subject
         USING ERRCODE = '22003';
@@ -39,10 +41,12 @@ BEGIN
 
     UPDATE days
     SET
-        day_timetable    = COALESCE(p_timetable, day_timetable),
+        day_timetable    = p_timetable,
 		day_subject		= COALESCE(p_subject, day_subject),
         day_time    = COALESCE(p_time, day_time),
-        day_weekday = COALESCE(p_weekday, day_weekday)
+        day_weekday = p_weekday
     WHERE day_id = p_id;
+
+    CALL proc_create_audit_log('Days', 'UPDATE', p_id::text, 'Updated day');
 END;
 $$;

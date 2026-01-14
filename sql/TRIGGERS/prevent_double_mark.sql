@@ -1,6 +1,8 @@
 CREATE OR REPLACE FUNCTION trg_prevent_fast_double_mark()
 RETURNS trigger
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF EXISTS (
@@ -16,6 +18,8 @@ BEGIN
     RETURN NEW;
 END;
 $$;
+
+DROP TRIGGER IF EXISTS prevent_fast_double_mark ON StudentData;
 
 CREATE TRIGGER prevent_fast_double_mark
 BEFORE INSERT ON StudentData

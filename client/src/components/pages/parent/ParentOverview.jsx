@@ -1,11 +1,11 @@
 import React, { useState, useEffect, use, useMemo } from "react";
-import { useStudentsByParent } from "../../../hooks/students/queries/useStudentByParent";
 import { useGetChildren } from "../../../hooks/studentparents/queries/useGetChildren";
 import { useUserData } from "../../../hooks/users/queries/useUserData";
 import { getCurrentUser } from "../../../utils/auth";
 import StudentSchedule from "../student/StudentSchedule";
 import StudentGradesAndAbsences from "../student/StudentGradesAndAbsences";
 import StudentJournal from "../student/StudentJournal";
+import ParentTeacherContact from "./ParentTeacherContact";
 
 export default function ParentOverview() {
   const currentUser = getCurrentUser();
@@ -73,8 +73,8 @@ export default function ParentOverview() {
                       key={sId}
                       className={isSelected ? "active" : ""}
                       onClick={() => {
-                        if (import.meta.env.DEV) console.log("CLICKED student:", sId);
                         setSelectedStudentId(sId);
+                        if (import.meta.env.DEV) console.log("CLICKED student:", sId);
                       }}
                     >
                       {s.student_name} {s.student_surname} {s.student_class ? `(${s.student_class})` : ""}
@@ -105,6 +105,12 @@ export default function ParentOverview() {
                   >
                     Журнал
                   </button>
+                  <button
+                    className={activeTab === "teacher" ? "active" : ""}
+                    onClick={() => setActiveTab("teacher")}
+                  >
+                    Контакт вчителя
+                  </button>
                 </div>
                 <div style={{ marginTop: 20 }}>
                   {activeTab === "schedule" && (
@@ -116,7 +122,10 @@ export default function ParentOverview() {
                   {activeTab === "journal" && (
                     <StudentJournal studentId={selectedStudentId} />
                   )}
-                </div>
+                  {activeTab === "teacher" && (
+                    <ParentTeacherContact studentClass={selectedStudent?.student_class} />
+                  )}
+                </div>  
               </>
             )}
           </div>

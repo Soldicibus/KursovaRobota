@@ -5,6 +5,8 @@ CREATE OR REPLACE PROCEDURE proc_create_material(
     OUT new_material_id integer
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     p_name := NULLIF(trim(p_name), '');
@@ -19,5 +21,7 @@ BEGIN
     INSERT INTO material(material_name, material_desc, material_link)
     VALUES (p_name, p_desc, p_link)
     RETURNING material_id INTO new_material_id;
+
+    CALL proc_create_audit_log('Material', 'INSERT', new_material_id::text, 'Created material');
 END;
 $$;

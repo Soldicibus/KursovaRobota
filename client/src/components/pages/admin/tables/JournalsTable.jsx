@@ -7,6 +7,7 @@ import { useDeleteJournal } from '../../../../hooks/journals/mutations/useDelete
 import { useTeachers } from '../../../../hooks/teachers/queries/useTeachers';
 import { useAdminPermissions } from '../../../../hooks/useAdminPermissions';
 import Modal from '../../../common/Modal';
+import ErrorModal from '../../../common/ErrorModal';
 
 export default function JournalsTable() {
   const { data: journals, isLoading } = useJournals();
@@ -17,6 +18,8 @@ export default function JournalsTable() {
   const deleteMutation = useDeleteJournal();
 
   const { data: teachers } = useTeachers();
+
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJournal, setEditingJournal] = useState(null);
@@ -36,7 +39,7 @@ export default function JournalsTable() {
       try {
         await deleteMutation.mutateAsync(item.journal_id);
       } catch (error) {
-        alert('Error deleting journal: ' + error.message);
+        setErrorMessage('Error deleting journal: ' + error.message);
       }
     }
   };
@@ -53,14 +56,18 @@ export default function JournalsTable() {
       if (editingJournal) {
         await updateMutation.mutateAsync({
           id: editingJournal.journal_id,
-          ...formData
+          name: formData.name || null,
+          teacherId: formData.teacherId || null
         });
       } else {
-        await createMutation.mutateAsync(formData);
+        await createMutation.mutateAsync({
+           name: formData.name || null,
+           teacherId: formData.teacherId || null
+        });
       }
       setIsModalOpen(false);
     } catch (error) {
-      alert('Error: ' + error.message);
+      setErrorMessage('Error: ' + error.message);
     }
   };
 
@@ -84,6 +91,8 @@ export default function JournalsTable() {
         canDelete={permissions.others.delete}
         canCreate={permissions.others.create}
       />
+      
+      <ErrorModal error={errorMessage} onClose={() => setErrorMessage(null)} />
 
       <Modal
         isOpen={isModalOpen}

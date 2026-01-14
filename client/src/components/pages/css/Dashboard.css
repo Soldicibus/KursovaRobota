@@ -22,7 +22,7 @@
 }
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-top: 6px;
   margin-bottom: 12px;
 }
@@ -182,8 +182,10 @@
 }
 
 /* Journal layout improvements */
-.journal-card {
+.card.journal-card {
   padding: 16px;
+  /* Adjust margins to prevent being stretched out and avoid sidebar overlap */
+  max-width: 85vw;
 }
 .journal-by-date {
   display: flex;

@@ -4,7 +4,12 @@ import * as teacherAPI from "../../../api/teacherAPI.js";
 export function useCreateTeacher() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: teacherAPI.createTeacher,
+    mutationFn: (variables) => {
+      if (variables.user_id) {
+        return teacherAPI.createTeacherWithUser(variables);
+      }
+      return teacherAPI.createTeacher(variables);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teachers"] }),
   });
 }

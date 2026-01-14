@@ -113,21 +113,3 @@
   margin: 8px 0 6px;
 }
 .feature p { margin: 0 6px 6px; opacity: 0.95 }
-
-.reveal {
-  --delay: 0ms;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 600ms cubic-bezier(.2,.9,.3,1) var(--delay), transform 600ms cubic-bezier(.2,.9,.3,1) var(--delay);
-  will-change: opacity, transform;
-}
-.reveal.in-view { opacity: 1; transform: translateY(0); }
-
-.reveal-left { transform: translateX(-30px); }
-.reveal-left.in-view { transform: translateX(0); }
-.reveal-right { transform: translateX(30px); }
-.reveal-right.in-view { transform: translateX(0); }
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal { transition: none; transform: none; opacity: 1 }
-}

@@ -6,14 +6,15 @@ import StudentSchedule from "./StudentSchedule";
 import StudentMaterials from "./StudentMaterials";
 import StudentGradesAndAbsences from "./StudentGradesAndAbsences";
 import StudentRanking from "./StudentRanking";
-import { useStudents } from "../../../hooks/students/queries/useStudents";
+import StudentPerformanceMatrix from "./StudentPerformanceMatrix";
+import { useStudentsM } from "../../../hooks/students/queries/useStudentsM";
 import { useStudent } from "../../../hooks/students/queries/useStudent";
 import { useUserData } from "../../../hooks/users/queries/useUserData";
 import { getCurrentUser } from "../../../utils/auth";
 
 export default function StudentDashboard() {
   const [tab, setTab] = useState("journal");
-  const { data: students, isLoading: studentsLoading } = useStudents();
+  const { data: students, isLoading: studentsLoading } = useStudentsM();
   // Derive user id from token and fetch user profile to obtain linked student id
   const currentUser = getCurrentUser();
   const userId = currentUser?.userId || currentUser?.id || currentUser?.sub || null;
@@ -149,6 +150,12 @@ export default function StudentDashboard() {
           Звітність
         </button>
         <button
+          onClick={() => setTab("performance")}
+          className={tab === "performance" ? "active" : ""}
+        >
+          Матриця успішності
+        </button>
+        <button
           onClick={() => setTab("ranking")}
           className={tab === "ranking" ? "active" : ""}
         >
@@ -160,9 +167,10 @@ export default function StudentDashboard() {
         {tab === "journal" && <StudentJournal studentId={linkedStudentId} />}
         {tab === "homework" && <StudentHomework studentId={linkedStudentId} studentClass={className} />}
         {tab === "schedule" && <StudentSchedule studentClass={className} />}
-        {tab === "materials" && <StudentMaterials studentClass={className} />}
+        {tab === "materials" && <StudentMaterials />}
         {tab === "grades" && <StudentGradesAndAbsences enabled={true} studentId={linkedStudentId} />}
-        {tab === "ranking" && <StudentRanking />}
+        {tab === "performance" && <StudentPerformanceMatrix studentId={linkedStudentId} />}
+        {tab === "ranking" && <StudentRanking studentId={linkedStudentId} />}
       </div>
     </main>
   );

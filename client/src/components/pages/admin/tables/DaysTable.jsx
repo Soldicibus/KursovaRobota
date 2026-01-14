@@ -8,12 +8,15 @@ import { useAdminPermissions } from '../../../../hooks/useAdminPermissions';
 import { useSubjects } from '../../../../hooks/subjects/queries/useSubjects';
 import { useTimetables } from '../../../../hooks/timetables/queries/useTimetables';
 import Modal from '../../../common/Modal';
+import ErrorModal from '../../../common/ErrorModal';
 
 export default function DaysTable() {
   const { data: days, isLoading } = useDays();
   const { permissions } = useAdminPermissions();
   const { data: subjects } = useSubjects();
   const { data: timetables } = useTimetables();
+
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const createMutation = useCreateDay();
   const updateMutation = useUpdateDay();
@@ -44,7 +47,7 @@ export default function DaysTable() {
       try {
         await deleteMutation.mutateAsync(item.day_id);
       } catch (error) {
-        alert('Error deleting day: ' + error.message);
+        setErrorMessage('Error deleting day: ' + error.message);
       }
     }
   };
@@ -80,7 +83,7 @@ export default function DaysTable() {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Failed to save day:', error);
-      alert('Failed to save day');
+      setErrorMessage('Failed to save day: ' + (error.message || error));
     }
   };
 
@@ -106,6 +109,8 @@ export default function DaysTable() {
         canDelete={permissions.others.delete}
         canCreate={permissions.others.create}
       />
+      
+      <ErrorModal error={errorMessage} onClose={() => setErrorMessage(null)} />
 
       <Modal
         isOpen={isModalOpen}
@@ -152,7 +157,7 @@ export default function DaysTable() {
               required
             >
               <option value="">Select Weekday</option>
-              {['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'Пʼятниця', 'Субота', 'Неділя'].map(d => (
+              {['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'].map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>

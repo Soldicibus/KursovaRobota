@@ -7,12 +7,15 @@ import { useDeleteTimetable } from '../../../../hooks/timetables/mutations/useDe
 import { useClasses } from '../../../../hooks/classes/queries/useClasses';
 import { useAdminPermissions } from '../../../../hooks/useAdminPermissions';
 import Modal from '../../../common/Modal';
+import ErrorModal from '../../../common/ErrorModal';
 
 export default function TimetablesTable() {
   const { data: timetables, isLoading } = useTimetables();
   const { data: classes } = useClasses();
   const { permissions } = useAdminPermissions();
   
+  const [errorMessage, setErrorMessage] = useState(null);
+
   const createMutation = useCreateTimetable();
   const updateMutation = useUpdateTimetable();
   const deleteMutation = useDeleteTimetable();
@@ -39,7 +42,7 @@ export default function TimetablesTable() {
         await deleteMutation.mutateAsync(item.timetable_id);
       } catch (error) {
         console.error('Failed to delete timetable:', error);
-        alert('Failed to delete timetable');
+        setErrorMessage('Failed to delete timetable: ' + (error.message || error));
       }
     }
   };
@@ -58,7 +61,7 @@ export default function TimetablesTable() {
     try {
       const dataToSubmit = {
         name: formData.name,
-        class_name: formData.class_name
+        class_name: formData.class_name || null
       };
 
       if (editingTimetable) {
@@ -72,7 +75,7 @@ export default function TimetablesTable() {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Failed to save timetable:', error);
-      alert('Failed to save timetable');
+      setErrorMessage('Failed to save timetable: ' + (error.message || error));
     }
   };
 
@@ -96,6 +99,8 @@ export default function TimetablesTable() {
         canDelete={permissions.others.delete}
         canCreate={permissions.others.create}
       />
+      
+      <ErrorModal error={errorMessage} onClose={() => setErrorMessage(null)} />
 
       <Modal
         isOpen={isModalOpen}

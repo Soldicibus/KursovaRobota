@@ -5,6 +5,8 @@ CREATE OR REPLACE FUNCTION get_teacher_salary(
 )
 RETURNS NUMERIC
 LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 SELECT COUNT(*) * 550
 	FROM Lessons

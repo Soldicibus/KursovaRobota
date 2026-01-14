@@ -2,6 +2,8 @@ CREATE OR REPLACE FUNCTION translit_uk_to_lat(p_text TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
 IMMUTABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     t TEXT;

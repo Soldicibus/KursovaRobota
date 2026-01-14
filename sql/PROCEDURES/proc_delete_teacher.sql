@@ -2,20 +2,24 @@ CREATE OR REPLACE PROCEDURE proc_delete_teacher(
     IN p_id integer
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_user_id integer;
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM teacher WHERE teacher_id = p_id) THEN
+    IF NOT EXISTS (SELECT 1 FROM vws_teachers WHERE teacher_id = p_id) THEN
         RAISE EXCEPTION 'Teacher % does not exist', p_id
         USING ERRCODE = '22003';
     END IF;
 
     SELECT teacher_user_id INTO v_user_id
-    FROM teacher
+    FROM vws_teachers
     WHERE teacher_id = p_id;
 
     DELETE FROM teacher WHERE teacher_id = p_id;
+
+    CALL proc_create_audit_log('Teacher', 'DELETE', p_id::text, 'Deleted teacher');
 
     IF v_user_id IS NOT NULL THEN
         PERFORM proc_delete_user(v_user_id);

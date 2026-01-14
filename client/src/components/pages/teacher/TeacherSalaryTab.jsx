@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTeacherSalaryReport } from "../../../hooks/teachers/queries/useTeacherSalaryReport";
+import ErrorModal from "../../common/ErrorModal";
 
 export default function TeacherSalaryTab({ teacherId }) {
   const [dateFrom, setDateFrom] = useState(() => {
@@ -14,11 +15,50 @@ export default function TeacherSalaryTab({ teacherId }) {
     return lastDayPrevMonth.toISOString().split("T")[0];
   });
 
-console.log("dateFrom:", dateFrom);
-   console.log("dateTo:", dateTo);
+  const [debouncedDateFrom, setDebouncedDateFrom] = useState(dateFrom);
+  const [debouncedDateTo, setDebouncedDateTo] = useState(dateTo);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedDateFrom(dateFrom);
+    }, 1500);
+    return () => clearTimeout(handler);
+  }, [dateFrom]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedDateTo(dateTo);
+    }, 1500);
+    return () => clearTimeout(handler);
+  }, [dateTo]);
+
+console.log("dateFrom:", debouncedDateFrom);
+   console.log("dateTo:", debouncedDateTo);
    console.log("teacherId:", teacherId);
 
-  const { data: salaryReport, isLoading, error } = useTeacherSalaryReport(teacherId, dateFrom, dateTo);
+  const isValidDate = (dStr) => {
+    if (!dStr) return false;
+    const d = new Date(dStr);
+    return !isNaN(d.getTime());
+  };
+
+  const isInvalidRange = debouncedDateFrom && debouncedDateTo && new Date(debouncedDateFrom) > new Date(debouncedDateTo);
+  const [rangeError, setRangeError] = useState(null);
+
+  useEffect(() => {
+    if (isInvalidRange) {
+      setRangeError("What do you think this is? Fucking fairyland?");
+    } else {
+      setRangeError(null);
+    }
+  }, [isInvalidRange]);
+
+  const { data: salaryReport, isLoading, error } = useTeacherSalaryReport(
+    teacherId,
+    debouncedDateFrom,
+    debouncedDateTo,
+    { enabled: isValidDate(debouncedDateFrom) && isValidDate(debouncedDateTo) && !isInvalidRange }
+  );
 
   if (isLoading) return <div>Завантаження...</div>;
   if (error) return <div>Помилка завантаження: {error.message}</div>;
@@ -27,13 +67,19 @@ console.log("dateFrom:", dateFrom);
         // Filter by teacherId if item has it
         if (item.teacher_id && String(item.teacher_id) !== String(teacherId)) return false;
         
-        // Filter by date if item has a date field (e.g., payment_date, date)
-        const itemDate = item.date || item.payment_date;
-        if (itemDate) {
+        if (debouncedDateFrom || debouncedDateTo) {
+          const itemDate = item.date || item.payment_date;
+          if (itemDate) {
             const d = new Date(itemDate);
-            const from = new Date(dateFrom);
-            const to = new Date(dateTo);
+
+            let from = debouncedDateFrom ? new Date(debouncedDateFrom) : new Date("1900-01-01");
+            if (isNaN(from.getTime())) from = new Date(); // Fallback to current date if format is wrong
+
+            let to = debouncedDateTo ? new Date(debouncedDateTo) : new Date("2100-01-01");
+            if (isNaN(to.getTime())) to = new Date(); // Fallback to current date if format is wrong
+
             return d >= from && d <= to;
+          }
         }
         return true;
     })
@@ -41,6 +87,7 @@ console.log("dateFrom:", dateFrom);
 
   return (
     <div className="card">
+      <ErrorModal error={rangeError} onClose={() => setRangeError(null)} />
       <h2>Зарплата викладача</h2>
       <div style={{ marginBottom: 20, display: "flex", gap: 20 }}>
         <label>
@@ -48,7 +95,16 @@ console.log("dateFrom:", dateFrom);
           <input
             type="date"
             value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === null || val === undefined) return;
+              // If it's just whitespace, treat as empty
+              if (val.trim() === "") {
+                setDateFrom("");
+              } else {
+                setDateFrom(val);
+              }
+            }}
             style={{ marginLeft: 10, padding: 5 }}
           />
         </label>
@@ -57,7 +113,15 @@ console.log("dateFrom:", dateFrom);
           <input
             type="date"
             value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === null || val === undefined) return;
+              if (val.trim() === "") {
+                setDateTo("");
+              } else {
+                setDateTo(val);
+              }
+            }}
             style={{ marginLeft: 10, padding: 5 }}
           />
         </label>

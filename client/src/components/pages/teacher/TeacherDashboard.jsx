@@ -15,6 +15,7 @@ export default function TeacherDashboard() {
   const [selectedClassName, setSelectedClassName] = useState(() => {
     return localStorage.getItem("teacher_selected_class_name") || null;
   });
+  const [viewKey, setViewKey] = useState(0);
   const [myClasses, setMyClasses] = useState([]);
   const [classesLoaded, setClassesLoaded] = useState(false);
 
@@ -63,6 +64,7 @@ export default function TeacherDashboard() {
               setSelectedClassName(first);
               localStorage.setItem("teacher_selected_class_name", first);
               setScope("class");
+              setViewKey(k => k + 1);
               return;
             }
             setScope("my");
@@ -99,6 +101,7 @@ export default function TeacherDashboard() {
           <TeacherSalaryTab teacherId={myTeacherId} />
         ) : scope === "class" ? (
           <TeacherClassView
+            key={`${selectedClassName}-${viewKey}`}
             className={selectedClassName}
             onBack={() => setScope(prevClassesScope || "all")}
           />

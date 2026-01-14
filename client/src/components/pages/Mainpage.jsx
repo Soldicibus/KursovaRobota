@@ -61,20 +61,20 @@ export default function Mainpage() {
             <section className="features">
                 <h2 className="features__title">Що ми пропонуємо</h2>
                 <div className="features__grid">
-                    <article className="feature reveal reveal-left" data-delay="0s">
-                        <img src="/image.png" alt="Швидкий доступ" />
+                    <article className="feature">
+                        <img src="https://i.ibb.co/8nTxLNPB/image.png" alt="Швидкий доступ" />
                         <h3>Швидкий доступ</h3>
                         <p>Всі потрібні дані завжди під рукою: розклад, оцінки та домашні завдання.</p>
                     </article>
 
-                    <article className="feature reveal" data-delay="150ms">
-                        <img src="/image1.png" alt="Інтерактивні журнали" />
+                    <article className="feature">
+                        <img src="https://i.ibb.co/FqzHGp0D/image1.png" alt="Інтерактивні журнали" />
                         <h3>Інтерактивні журнали</h3>
                         <p>Вчителі можуть швидко вести журнал та ділитися матеріалами.</p>
                     </article>
 
-                    <article className="feature reveal reveal-right" data-delay="300ms">
-                        <img src="/image12.png" alt="Аналітика успішності" />
+                    <article className="feature">
+                        <img src="https://i.ibb.co/qYkptZX5/image12.png" alt="Аналітика успішності" />
                         <h3>Аналітика успішності</h3>
                         <p>Батьки бачать прогрес учня та ключові показники.</p>
                     </article>

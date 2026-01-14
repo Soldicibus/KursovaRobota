@@ -14,6 +14,7 @@ import HomeworkTable from "./tables/HomeworkTable";
 import TimetablesTable from "./tables/TimetablesTable";
 import DaysTable from "./tables/DaysTable";
 import MaterialsTable from "./tables/MaterialsTable";
+import AuditLogsTable from "./tables/AuditLogsTable";
 import "../css/AdminLayout.css";
 
 export default function AdminPanel() {
@@ -44,7 +45,8 @@ export default function AdminPanel() {
     { id: 'homework', label: 'Homework' },
     { id: 'timetables', label: 'Timetables' },
     { id: 'days', label: 'Days' },
-    { id: 'materials', label: 'Materials' }
+    { id: 'materials', label: 'Materials' },
+    { id: 'audit-logs', label: 'Audit Logs' }
   ];
 
   return (
@@ -80,6 +82,7 @@ export default function AdminPanel() {
         {activeTab === 'timetables' && <TimetablesTable />}
         {activeTab === 'days' && <DaysTable />}
         {activeTab === 'materials' && <MaterialsTable />}
+        {activeTab === 'audit-logs' && <AuditLogsTable />}
       </div>
     </main>
   );

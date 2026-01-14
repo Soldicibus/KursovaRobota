@@ -7,10 +7,12 @@ CREATE OR REPLACE PROCEDURE proc_update_teacher(
     IN p_user_id integer
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM teacher WHERE teacher_id = p_id
+        SELECT 1 FROM vws_teachers WHERE teacher_id = p_id
     ) THEN
         RAISE EXCEPTION 'Teacher % does not exist', p_id
         USING ERRCODE = '22003';
@@ -22,7 +24,7 @@ BEGIN
     p_phone := NULLIF(trim(p_phone), '');
 
     IF p_user_id IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM users WHERE user_id = p_user_id
+        SELECT 1 FROM vws_users WHERE user_id = p_user_id
     ) THEN
         RAISE EXCEPTION 'User % does not exist', p_user_id
         USING ERRCODE = '22003';
@@ -32,9 +34,11 @@ BEGIN
     SET
         teacher_name     = COALESCE(p_name, teacher_name),
         teacher_surname  = COALESCE(p_surname, teacher_surname),
-        teacher_patronym = COALESCE(p_patronym, teacher_patronym),
+        teacher_patronym = p_patronym,
         teacher_phone    = COALESCE(p_phone, teacher_phone),
         teacher_user_id  = COALESCE(p_user_id, teacher_user_id)
     WHERE teacher_id = p_id;
+
+    CALL proc_create_audit_log('Teacher', 'UPDATE', p_id::text, 'Updated teacher');
 END;
 $$;

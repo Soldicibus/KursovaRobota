@@ -4,7 +4,12 @@ import * as studentAPI from "../../../api/studentAPI.js";
 export function useCreateStudent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: studentAPI.createStudent,
+    mutationFn: (variables) => {
+      if (variables.user_id) {
+        return studentAPI.createStudentWithUser(variables);
+      }
+      return studentAPI.createStudent(variables);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),
   });
 }

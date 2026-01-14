@@ -47,6 +47,23 @@ export const createTeacher = async ({ name, surname, patronym, phone }) => {
   return request;
 };
 
+export const createTeacherWithUser = async ({
+  name,
+  surname,
+  patronym,
+  phone,
+  user_id,
+}) => {
+  const request = await api.post("/teacher/user", {
+    name,
+    surname,
+    patronym,
+    phone,
+    user_id,
+  });
+  return request;
+};
+
 export const patchTeacher = async ({
   id,
   name,

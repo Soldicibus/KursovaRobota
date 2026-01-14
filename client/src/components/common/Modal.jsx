@@ -1,10 +1,10 @@
 import React from 'react';
 
-export default function Modal({ isOpen, onClose, title, children }) {
+export default function Modal({ isOpen, onClose, title, children, zIndex }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 overflow-y-auto" style={{ zIndex: zIndex || 50 }} aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div 
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 

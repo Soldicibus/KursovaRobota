@@ -1,7 +1,7 @@
 import React from "react";
 import { useMaterials } from "../../../hooks/materials/queries/useMaterials";
 
-export default function StudentMaterials({ studentClass: propStudentClass }) {
+export default function StudentMaterials() {
   const { data: materials, isLoading } = useMaterials();
   let list = [];
   if (Array.isArray(materials) && materials.length > 0) {

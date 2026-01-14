@@ -3,6 +3,7 @@ import "./css/Auth.css";
 import { useLogin } from "../../hooks/users";
 import { useNavigate, useLocation } from "react-router-dom";
 import { decodeToken } from "../../utils/jwt";
+import ErrorModal from "../common/ErrorModal";
 
 export default function Auth() {
     const [username, setUsername] = useState('');
@@ -37,9 +38,9 @@ export default function Auth() {
                     <input value={password} onChange={e => setPassword(e.target.value)} type="password" id="password" name="password" required />
                     <br />
                     <button type="submit" disabled={login.isLoading}>Увійти</button>
-                    {error && <div className="error">{error}</div>}
                 </form>
             </div>
+            <ErrorModal error={error} onClose={() => setError(null)} />
         </main>
     );
 }

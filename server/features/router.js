@@ -1,0 +1,46 @@
+import { Router } from "express";
+import tempRouter from "./temp/tempRouter.js";
+import studentsRouter from "./students/StudentRouter.js";
+import teacherRouter from "./teachers/TeacherRoutes.js";
+import userRoleRouter from "./userroles/UserRoleRouter.js";
+import userRouter from "./users/UserRouter.js";
+import roleRouter from "./roles/RoleRouter.js";
+import classRouter from "./classes/ClassRouter.js";
+import subjectRouter from "./subjects/SubjectRouter.js";
+import parentRouter from "./parents/ParentRouter.js";
+import homeworkRouter from "./homework/HomeworkRouter.js";
+import dayRouter from "./days/DayRouter.js";
+import journalRouter from "./journals/JournalRouter.js";
+import lessonRouter from "./lessons/LessonRouter.js";
+import materialRouter from "./materials/MaterialRouter.js";
+import studentDataRouter from "./studentdata/StudentDataRouter.js";
+import timetableRouter from "./timetables/TimetableRouter.js";
+import studentParentRouter from "./studentparents/StudentParentRouter.js";
+import authRouter from "./auth/authRoutes.js";
+import debugRouter from "./debug/DebugRouter.js";
+import auditLogRouter from "./auditlogs/AuditLogRouter.js";
+
+const router = Router();
+//TODO: Remove temp before shipping
+router.use("/temp", tempRouter);
+router.use("/students", studentsRouter);
+router.use("/teacher", teacherRouter);
+router.use("/userroles", userRoleRouter);
+router.use("/users", userRouter);
+router.use("/roles", roleRouter);
+router.use("/classes", classRouter);
+router.use("/subjects", subjectRouter);
+router.use("/parents", parentRouter);
+router.use("/homework", homeworkRouter);
+router.use("/days", dayRouter);
+router.use("/journals", journalRouter);
+router.use("/lessons", lessonRouter);
+router.use("/materials", materialRouter);
+router.use("/studentdata", studentDataRouter);
+router.use("/timetables", timetableRouter);
+router.use("/studentparents", studentParentRouter);
+router.use("/auth", authRouter);
+router.use("/debug", debugRouter);
+router.use("/auditlogs", auditLogRouter);
+
+export default router;

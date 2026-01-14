@@ -8,10 +8,12 @@ CREATE OR REPLACE PROCEDURE proc_update_homework(
     IN p_class varchar(10) DEFAULT NULL
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM homework WHERE homework_id = p_id
+        SELECT 1 FROM vws_homeworks WHERE homework_id = p_id
     ) THEN
         RAISE EXCEPTION 'Homework % does not exist', p_id
         USING ERRCODE = '22003';
@@ -27,14 +29,14 @@ BEGIN
     END IF;
 
     IF p_teacher IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM teacher WHERE teacher_id = p_teacher
+        SELECT 1 FROM vws_teachers WHERE teacher_id = p_teacher
     ) THEN
         RAISE EXCEPTION 'Teacher % does not exist', p_teacher
         USING ERRCODE = '22003';
     END IF;
 
     IF p_lesson IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM lessons WHERE lesson_id = p_lesson
+        SELECT 1 FROM vws_lessons WHERE lesson_id = p_lesson
     ) THEN
         RAISE EXCEPTION 'Lesson % does not exist', p_lesson
         USING ERRCODE = '22003';
@@ -42,7 +44,7 @@ BEGIN
 
     IF p_class IS NOT NULL THEN
         IF NOT EXISTS (
-            SELECT 1 FROM class WHERE class_name = p_class
+            SELECT 1 FROM vws_classes WHERE class_name = p_class
         ) THEN
             RAISE EXCEPTION 'Class % does not exist', p_class
             USING ERRCODE = '22003';
@@ -61,12 +63,14 @@ BEGIN
 
     UPDATE homework
     SET
-        homework_name    = COALESCE(p_name, homework_name),
-        homework_teacher = COALESCE(p_teacher, homework_teacher),
+        homework_name    = p_name,
+        homework_teacher = p_teacher,
         homework_lesson  = COALESCE(p_lesson, homework_lesson),
         homework_duedate = COALESCE(p_duedate, homework_duedate),
         homework_desc    = COALESCE(p_desc, homework_desc),
         homework_class   = COALESCE(p_class, homework_class)
     WHERE homework_id = p_id;
+
+    CALL proc_create_audit_log('Homework', 'UPDATE', p_id::text, 'Updated homework');
 END;
 $$;

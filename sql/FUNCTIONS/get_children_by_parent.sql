@@ -2,6 +2,7 @@ CREATE OR REPLACE FUNCTION get_children_by_parent(
     p_parent_id INT
 )
 RETURNS TABLE(
+    student_id INT,
     student_name VARCHAR,
     student_surname VARCHAR,
     student_class VARCHAR,
@@ -9,8 +10,11 @@ RETURNS TABLE(
     attendance NUMERIC(5,2)
 )
 LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
     SELECT
+        s.student_id,
         s.student_name,
         s.student_surname,
         s.student_class,

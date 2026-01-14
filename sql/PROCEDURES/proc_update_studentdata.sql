@@ -8,10 +8,12 @@ CREATE OR REPLACE PROCEDURE proc_update_studentdata(
     IN p_note text DEFAULT NULL
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM studentdata WHERE data_id = p_id
+        SELECT 1 FROM vws_student_data WHERE data_id = p_id
     ) THEN
         RAISE EXCEPTION 'Studentdata % does not exist', p_id
         USING ERRCODE = '22003';
@@ -20,21 +22,21 @@ BEGIN
     p_note := NULLIF(trim(p_note), '');
 
     IF p_journal_id IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM journal WHERE journal_id = p_journal_id
+        SELECT 1 FROM vws_journals WHERE journal_id = p_journal_id
     ) THEN
         RAISE EXCEPTION 'Journal % does not exist', p_journal_id
         USING ERRCODE = '22003';
     END IF;
 
     IF p_student_id IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM students WHERE student_id = p_student_id
+        SELECT 1 FROM vws_students WHERE student_id = p_student_id
     ) THEN
         RAISE EXCEPTION 'Student % does not exist', p_student_id
         USING ERRCODE = '22003';
     END IF;
 
     IF p_lesson IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM lessons WHERE lesson_id = p_lesson
+        SELECT 1 FROM vws_lessons WHERE lesson_id = p_lesson
     ) THEN
         RAISE EXCEPTION 'Lesson % does not exist', p_lesson
         USING ERRCODE = '22003';
@@ -50,9 +52,11 @@ BEGIN
         journal_id = COALESCE(p_journal_id, journal_id),
         student_id = COALESCE(p_student_id, student_id),
         lesson     = COALESCE(p_lesson, lesson),
-        mark       = COALESCE(p_mark, mark),
+        mark       = p_mark,
         status     = COALESCE(p_status, status),
-        note       = COALESCE(p_note, note)
+        note       = p_note
     WHERE data_id = p_id;
+
+    CALL proc_create_audit_log('StudentData', 'UPDATE', p_id::text, 'Updated student data');
 END;
 $$;

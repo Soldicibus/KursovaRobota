@@ -8,6 +8,8 @@ CREATE OR REPLACE PROCEDURE proc_create_homework(
     OUT new_homework_id integer
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     p_name := NULLIF(trim(p_name), '');
@@ -19,21 +21,21 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (
-        SELECT 1 FROM teacher WHERE teacher_id = p_teacher
+        SELECT 1 FROM vws_teachers WHERE teacher_id = p_teacher
     ) THEN
         RAISE EXCEPTION 'Teacher % does not exist', p_teacher
         USING ERRCODE = '23503';
     END IF;
 
     IF NOT EXISTS (
-        SELECT 1 FROM lessons WHERE lesson_id = p_lesson
+        SELECT 1 FROM vws_lessons WHERE lesson_id = p_lesson
     ) THEN
         RAISE EXCEPTION 'Lesson % does not exist', p_lesson
         USING ERRCODE = '23503';
     END IF;
 
     IF NOT EXISTS (
-        SELECT 1 FROM class WHERE class_name = p_class
+        SELECT 1 FROM vws_classes WHERE class_name = p_class
     ) THEN
         RAISE EXCEPTION 'Class % does not exist', p_class
         USING ERRCODE = '23503';
@@ -71,5 +73,7 @@ BEGIN
         p_class
     )
     RETURNING homework_id INTO new_homework_id;
+
+    CALL proc_create_audit_log('Homework', 'INSERT', new_homework_id::text, 'Created homework');
 END;
 $$;

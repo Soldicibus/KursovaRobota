@@ -5,6 +5,8 @@ CREATE OR REPLACE FUNCTION get_student_marks(
 )
 RETURNS TABLE(mark SMALLINT, lesson_date DATE)
 LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 	SELECT sd.mark, l.lesson_date
 	FROM StudentData sd

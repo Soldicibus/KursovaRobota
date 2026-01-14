@@ -6,10 +6,21 @@ export const getAllSubjects = async () => {
   return request.data.subjects;
 };
 
-export const createSubject = async ({ name, program }) => {
+export const createSubject = async ({ name, program, cabinet }) => {
   const request = await api.post("/subjects", {
     name,
     program,
+    cabinet,
+  });
+
+  return request;
+};
+
+export const patchSubject = async ({ id, name, program, cabinet }) => {
+  const request = await api.patch(`/subjects/${id}`, {
+    name,
+    program,
+    cabinet,
   });
 
   return request;

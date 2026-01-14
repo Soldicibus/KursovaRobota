@@ -1,16 +1,18 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useStudentDataMarks7d } from "../../../hooks/studentdata/queries/useStudentDataMarks7d";
 import { useCreateStudentData } from "../../../hooks/studentdata/mutations/useCreateStudentData";
 import { useUpdateStudentData } from "../../../hooks/studentdata/mutations/useUpdateStudentData";
 import { useDeleteStudentData } from "../../../hooks/studentdata/mutations/useDeleteStudentData";
 import { useCreateLesson } from "../../../hooks/lessons/mutations/useCreateLesson";
-import { useLessonName } from "../../../hooks/lessons/queries/useLessonName";
+import { useLessonsByTeacherAndName } from "../../../hooks/lessons/queries/useLessonsByTeacherAndName";
 import { useSubjects } from "../../../hooks/subjects/queries/useSubjects";
 import { useMaterials } from "../../../hooks/materials/queries/useMaterials";
 import { useUserData } from "../../../hooks/users/queries/useUserData";
 import { getCurrentUser } from "../../../utils/auth";
 import { useStudent } from "../../../hooks/students/queries/useStudent";
+import { useParentsByStudent } from "../../../hooks/studentparents/queries/useParentsByStudent";
 import { useTimetableByStudent } from "../../../hooks/timetables/queries/useTimetableByStudent";
+import MonthlyGradesGrid from "../../common/MonthlyGradesGrid";
 
 function formatDateShort(value) {
   if (!value) return "—";
@@ -59,6 +61,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
   const updateStudentData = useUpdateStudentData();
   const deleteStudentData = useDeleteStudentData();
   const { data: student } = useStudent(studentId);
+  const { data: parents } = useParentsByStudent(studentId);
   const { data: timetable } = useTimetableByStudent(studentId);
   console.log("timetable:", timetable);
   const createLesson = useCreateLesson();
@@ -73,6 +76,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
   const teacherId = userData?.teacher_id || userData?.teacherId || userData?.entity_id || null;
 
   const [modal, setModal] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [form, setForm] = useState({
     mark: "",
     status: "",
@@ -86,7 +90,16 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
   });
 
   const [lessonSearch, setLessonSearch] = useState("");
-  const { data: searchedLesson } = useLessonName(lessonSearch);
+  const [debouncedLessonSearch, setDebouncedLessonSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedLessonSearch(lessonSearch);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [lessonSearch]);
+
+  const { data: searchedLesson } = useLessonsByTeacherAndName(teacherId, debouncedLessonSearch);
 
   const entries = useMemo(() => {
     const out = [];
@@ -129,6 +142,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
       newLessonMaterial: "",
       newLessonDate: "",
     });
+    console.log("Editing entry:", entry);
     setModal({ type: "edit", entry });
   };
 
@@ -150,11 +164,12 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
         const resData = newLessonRes?.data || newLessonRes;
         lessonId = resData?.lessonId || resData?.id || resData?.insertId;
       } else {
-        if (!searchedLesson) {
+        if (!searchedLesson || searchedLesson.length === 0) {
           alert("Lesson not found! Please search and select a valid lesson.");
           return;
         }
-        lessonId = searchedLesson.id || searchedLesson.lesson_id;
+        const lesson = searchedLesson[0];
+        lessonId = lesson.id || lesson.lesson_id;
       }
 
       if (!lessonId) {
@@ -162,24 +177,16 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
         return;
       }
 
-      // journalId is usually tied to the class/subject. 
-      // The prompt says "journal_id (auto get from marks7d)".
-      // marks7d is an array of entries. We can try to get journal_id from the first entry if available.
-      // Or maybe the backend handles it?
-      // The API requires journalId.
-      // The 7d marks hook returns the journal id as well.
       let journalId = marks7d?.journalId || marks7d?.journal_id || entries[0]?.journal_id || entries[0]?.journalId;
 
       if (!journalId) {
         // Fallback to timetable ID if marks7d is empty/null
-        // The prompt says "timetable_id = journal_id for the most part"
         if (Array.isArray(timetable) && timetable.length > 0) {
            journalId = timetable[0]?.get_timetable_id_by_student_id;
         } else {
            journalId = timetable?.get_timetable_id_by_student_id || timetable?.id || timetable?.timetable_id || timetable?.journal_id;
         }
       }
-
       await createStudentData.mutateAsync({
         journalId: journalId || null,
         studentId: studentId,
@@ -205,7 +212,15 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
       }
 
       // For update, we keep existing lesson and journal
-      const journalId = entry.journal_id || entry.journalId;
+      let journalId = entry.journal_id || entry.journalId || null;
+      if (!journalId) {
+        // Fallback to timetable ID if marks7d is empty/null
+        if (Array.isArray(timetable) && timetable.length > 0) {
+           journalId = timetable[0]?.get_timetable_id_by_student_id;
+        } else {
+           journalId = timetable?.get_timetable_id_by_student_id || timetable?.id || timetable?.timetable_id || timetable?.journal_id;
+        }
+      }
       const lessonId = entry.lesson_id || entry.lessonId;
 
       await updateStudentData.mutateAsync({
@@ -214,8 +229,8 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
         studentId: studentId,
         lesson: lessonId,
         mark: form.mark ? Number(form.mark) : null,
-        status: form.status || null,
-        note: form.note,
+        status: form.status,
+        note: form.note || null,
       });
       closeModal();
     } catch (err) {
@@ -292,6 +307,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
     const btnStyle = {
       padding: "8px 12px",
       borderRadius: 10,
+      background: "#ff0000ff",
       border: "1px solid #e6e6e6",
       cursor: "pointer",
       fontWeight: 700,
@@ -316,7 +332,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
     if (modal.type === "actions") {
       const entry = modal.entry;
       return (
-        <div style={overlayStyle} onClick={closeModal} role="dialog" aria-modal="true">
+        <div style={overlayStyle} role="dialog" aria-modal="true">
           <div style={boxStyle} onClick={stop}>
             <div style={headerStyle}>
               <div>
@@ -388,11 +404,11 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
     if (modal.type === "edit") {
       const entry = modal.entry;
       return (
-        <div style={overlayStyle} onClick={closeModal} role="dialog" aria-modal="true">
+        <div style={overlayStyle} role="dialog" aria-modal="true">
           <div style={boxStyle} onClick={stop}>
             <div style={headerStyle}>
               <div>
-                <div style={titleStyle}>Редагування оцінки (шаблон)</div>
+                <div style={titleStyle}>Редагування оцінки</div>
                 <div style={subStyle}>{entryTitle(entry)}</div>
               </div>
               <button type="button" onClick={closeModal} style={btnStyle}>
@@ -459,7 +475,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
           <div style={boxStyle} onClick={stop}>
             <div style={headerStyle}>
               <div>
-                <div style={titleStyle}>Додати оцінку (шаблон)</div>
+                <div style={titleStyle}>Додати оцінку</div>
                 <div style={subStyle}>Новий запис у журнал</div>
               </div>
               <button type="button" onClick={closeModal} style={btnStyle}>
@@ -504,9 +520,9 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
 
               {/* Lesson Selection */}
               <div style={{ border: "1px solid #eee", padding: 10, borderRadius: 10 }}>
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>Урок</div>
-                <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
-                  <label style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
+                <div style={{ fontWeight: "700", marginBottom: "8px" }}>Урок</div>
+                <div style={{ display: "flex", gap: "12px", marginBottom: "10px" }}>
+                  <label style={{ display: "flex", gap: "6px", alignItems: "center", cursor: "pointer" }}>
                     <input 
                       type="radio" 
                       name="lessonMode" 
@@ -515,7 +531,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
                     />
                     Існуючий урок
                   </label>
-                  <label style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
+                  <label style={{ display: "flex", gap: "6px", alignItems: "center", cursor: "pointer" }}>
                     <input 
                       type="radio" 
                       name="lessonMode" 
@@ -539,8 +555,8 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
                       style={{ padding: 10, borderRadius: 10, border: "1px solid #e6e6e6" }} 
                     />
                     {lessonSearch && (
-                      <div style={{ fontSize: 12, color: searchedLesson ? "green" : "red" }}>
-                        {searchedLesson ? `Знайдено ID: ${searchedLesson.id || searchedLesson.lesson_id}` : "Не знайдено"}
+                      <div style={{ fontSize: 12, color: searchedLesson && searchedLesson.length > 0 ? "green" : "red" }}>
+                        {searchedLesson && searchedLesson.length > 0 ? `Знайдено ID: ${searchedLesson[0].id || searchedLesson[0].lesson_id}` : "Не знайдено"}
                       </div>
                     )}
                   </label>
@@ -556,7 +572,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
                       />
                     </label>
                     <label style={{ display: "grid", gap: 4 }}>
-                      <div style={{ fontSize: 13 }}>Предмет</div>
+                      <div style={{ fontSize: 13, color: "rgba(0, 0, 0, 0.8)" }}>Предмет</div>
                       <select 
                         value={form.newLessonSubject}
                         onChange={e => setForm({...form, newLessonSubject: e.target.value})}
@@ -620,12 +636,50 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
   };
 
   return (
+    <>
     <div className="card journal-card">
       {renderModal()}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0 }}>Журнал учня</h2>
-          <div style={{ opacity: 0.8 }}>{studentName ? studentName : studentId ? `ID: ${studentId}` : ""}</div>
+        <div 
+          style={{ display: "flex", flexDirection: "column", cursor: "pointer", userSelect: "none" }}
+          onClick={() => setShowDetails(!showDetails)}
+          title="Натисніть для перегляду контактів"
+        >
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+            <h2 style={{ margin: 0 }}>Журнал учня {showDetails ? "▲" : "▼"}</h2>
+            <div style={{ opacity: 0.8 }}>{studentName ? studentName : studentId ? `ID: ${studentId}` : ""}</div>
+          </div>
+          {!showDetails && student && (
+             <div style={{ fontSize: 13, color: "#ffffffff", marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                 {student.email && <span>📧 {student.email}</span>}
+                 {(student.student_phone || student.phone) && <span>📞 {student.student_phone || student.phone}</span>}
+             </div>
+          )}
+          {showDetails && (
+            <div style={{ marginTop: 8, padding: 10, border: "1px solid #eee", borderRadius: 8, background: "#f8f9fa1f" }}>
+                <div style={{ fontWeight: "bold", marginBottom: 6 }}>Контактна інформація учня</div>
+                {student && (
+                   <div style={{ fontSize: 14, display: "grid", gap: 4 }}>
+                       {student.email && <div>E-mail: {student.email}</div>}
+                       {(student.student_phone || student.phone) && <div>Телефон: {student.student_phone || student.phone}</div>}
+                   </div>
+                )}
+                
+                {parents && Array.isArray(parents) && parents.length > 0 && (
+                   <div style={{ marginTop: 12, paddingTop: 8, borderTop: "1px solid #ddd" }}>
+                     <div style={{ fontWeight: "bold", marginBottom: 6 }}>Батьки</div>
+                     <div style={{ display: "grid", gap: 8 }}>
+                       {parents.map(p => (
+                         <div key={p.parent_id} style={{ fontSize: 14, background: "#ffffff3b", padding: 6, borderRadius: 6, border: "1px solid #eee" }}>
+                           <div style={{ fontWeight: 600 }}>{p.parent_surname} {p.parent_name} {p.parent_patronym}</div>
+                           <div style={{ color: "#ffffffff" }}>📞 {p.parent_phone}</div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                )}
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
@@ -683,7 +737,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
                       className="journal-subject-card"
                       role="button"
                       tabIndex={0}
-                      title="Натисніть, щоб редагувати/видалити (шаблон)"
+                      title="Натисніть, щоб редагувати/видалити"
                       onClick={() => openActions(mainItem)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") openActions(mainItem);
@@ -698,11 +752,22 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
                           gap: 10,
                         }}
                       >
-                        <div style={{ fontSize: 16, fontWeight: 600 }}>{mainSubjectName}</div>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <div style={{ fontSize: 16, fontWeight: 600 }}>{mainSubjectName}</div>
+                          {mainItem.note && (
+                            <div style={{ fontSize: 12, color: "#ffffffff", marginTop: 4 }}>
+                              {mainItem.note}
+                            </div>
+                          )}
+                        </div>
 
                         <div style={{
                           fontSize: 18,
-                          color: "#222",
+                          color: ["П", "Присутній"].includes(mainItem.status)
+                            ? "green"
+                            : ["Н", "Не присутній"].includes(mainItem.status)
+                            ? "red"
+                            : "#222",
                           fontWeight: 800,
                           padding: "6px 10px",
                           borderRadius: 8,
@@ -730,7 +795,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
                                 e.stopPropagation();
                                 openActions(mi);
                               }}
-                              title="Натисніть, щоб редагувати/видалити (шаблон)"
+                              title="Натисніть, щоб редагувати/видалити"
                               style={{
                                 padding: "6px 8px",
                                 borderRadius: 6,
@@ -752,39 +817,47 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
                       <div className="journal-other-subjects">
                         <div style={{ color: "#666", marginBottom: 6 }}>Інші предмети</div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
-                          {otherSubjects.map((o, idx) => (
-                            <div
-                              key={idx}
-                              className="subject-card"
-                              role="button"
-                              tabIndex={0}
-                              title="Натисніть, щоб редагувати/видалити (шаблон)"
-                              onClick={() => openActions(o.items[0])}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") openActions(o.items[0]);
-                              }}
-                              style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", cursor: "pointer" }}
-                            >
-                              <div style={{ fontSize: 14 }}>
-                                <div>{o.name}</div>
-                                <div style={{ color: "#666", fontSize: 12 }}>
-                                  {o.items.length > 1
-                                    ? `${o.items.length} оцінки`
-                                    : formatTime(o.items[0]?.lesson_date || o.items[0]?.date)}
+                          {otherSubjects.map((o, idx) => {
+                            const item = o.items[0];
+                            return (
+                              <div
+                                key={idx}
+                                className="subject-card"
+                                role="button"
+                                tabIndex={0}
+                                title="Натисніть, щоб редагувати/видалити"
+                                onClick={() => openActions(item)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") openActions(item);
+                                }}
+                                style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", cursor: "pointer" }}
+                              >
+                                <div style={{ fontSize: 14 }}>
+                                  <div>{o.name}</div>
+                                  <div style={{ color: "#666", fontSize: 12 }}>
+                                    {o.items.length > 1
+                                      ? `${o.items.length} оцінки`
+                                      : formatTime(item?.lesson_date || item?.date)}
+                                  </div>
+                                  {item?.note && <div style={{ fontSize: 11, color: "#ffffffff", marginTop: 2 }}>{item.note}</div>}
+                                </div>
+                                <div style={{
+                                  fontWeight: 800,
+                                  padding: "6px 10px",
+                                  borderRadius: 8,
+                                  border: "1px solid #eee",
+                                  background: "white",
+                                  color: ["П", "Присутній"].includes(item?.status)
+                                    ? "green"
+                                    : ["Н", "Не присутній"].includes(item?.status)
+                                    ? "red"
+                                    : "#222",
+                                }}>
+                                  {item?.mark != null ? item.mark : item?.status || "—"}
                                 </div>
                               </div>
-                              <div style={{
-                                fontWeight: 800,
-                                padding: "6px 10px",
-                                borderRadius: 8,
-                                border: "1px solid #eee",
-                                background: "white",
-                                color: "#222",
-                              }}>
-                                {o.items[0]?.mark != null ? o.items[0].mark : o.items[0]?.status || "—"}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -796,5 +869,7 @@ export default function TeacherStudentJournal({ studentId, studentName, onBack }
         })()}
       </div>
     </div>
+    <MonthlyGradesGrid studentId={studentId} />
+    </>
   );
 }

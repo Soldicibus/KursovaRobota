@@ -6,18 +6,20 @@ import { useUpdateMaterial } from '../../../../hooks/materials/mutations/useUpda
 import { useDeleteMaterial } from '../../../../hooks/materials/mutations/useDeleteMaterial';
 import { useAdminPermissions } from '../../../../hooks/useAdminPermissions';
 import Modal from '../../../common/Modal';
+import ErrorModal from '../../../common/ErrorModal';
 
 export default function MaterialsTable() {
   const { data: materials, isLoading } = useMaterials();
   const { permissions } = useAdminPermissions();
 
-  const createMutation = useCreateMaterial();
-  const updateMutation = useUpdateMaterial();
-  const deleteMutation = useDeleteMaterial();
-
+  const [errorMessage, setErrorMessage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '', link: '' });
+
+  const createMutation = useCreateMaterial();
+  const updateMutation = useUpdateMaterial();
+  const deleteMutation = useDeleteMaterial();
 
   const handleEdit = (item) => {
     setEditingMaterial(item);
@@ -35,7 +37,7 @@ export default function MaterialsTable() {
         await deleteMutation.mutateAsync(item.material_id);
       } catch (error) {
         console.error('Failed to delete material:', error);
-        alert('Failed to delete material');
+        setErrorMessage('Failed to delete material: ' + (error.message || error));
       }
     }
   };
@@ -63,7 +65,7 @@ export default function MaterialsTable() {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Failed to save material:', error);
-      alert('Failed to save material');
+      setErrorMessage('Failed to save material: ' + (error.message || error));
     }
   };
 
@@ -88,6 +90,8 @@ export default function MaterialsTable() {
         canDelete={permissions.others.delete}
         canCreate={permissions.others.create}
       />
+      
+      <ErrorModal error={errorMessage} onClose={() => setErrorMessage(null)} />
 
       <Modal
         isOpen={isModalOpen}

@@ -3,20 +3,22 @@ CREATE OR REPLACE PROCEDURE proc_assign_student_parent(
     IN p_parent_id integer
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM students WHERE student_id = p_student_id) THEN
+    IF NOT EXISTS (SELECT 1 FROM vws_students WHERE student_id = p_student_id) THEN
         RAISE EXCEPTION 'Student % does not exist', p_student_id
         USING ERRCODE = '22003';
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM parents WHERE parent_id = p_parent_id) THEN
+    IF NOT EXISTS (SELECT 1 FROM vws_parents WHERE parent_id = p_parent_id) THEN
         RAISE EXCEPTION 'Parent % does not exist', p_parent_id
         USING ERRCODE = '22003';
     END IF;
 
     IF EXISTS (
-        SELECT 1 FROM studentparent
+        SELECT 1 FROM vws_student_parents
         WHERE student_id_ref = p_student_id AND parent_id_ref = p_parent_id
     ) THEN
         RAISE EXCEPTION 'This student is already assigned to this parent'
@@ -25,5 +27,7 @@ BEGIN
 
     INSERT INTO studentparent(student_id_ref, parent_id_ref)
     VALUES (p_student_id, p_parent_id);
+
+    CALL proc_create_audit_log('StudentParent', 'INSERT', p_student_id || ',' || p_parent_id, 'Assigned student to parent');
 END;
 $$;

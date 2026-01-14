@@ -9,6 +9,7 @@ import { useLessons } from '../../../../hooks/lessons/queries/useLessons';
 import { useClasses } from '../../../../hooks/classes/queries/useClasses';
 import { useAdminPermissions } from '../../../../hooks/useAdminPermissions';
 import Modal from '../../../common/Modal';
+import ErrorModal from '../../../common/ErrorModal';
 
 export default function HomeworkTable() {
   const { data: homework, isLoading } = useHomework();
@@ -21,6 +22,8 @@ export default function HomeworkTable() {
   const { data: teachers } = useTeachers();
   const { data: lessons } = useLessons();
   const { data: classes } = useClasses();
+
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState(null);
@@ -36,7 +39,7 @@ export default function HomeworkTable() {
       lessonId: item.homework_lesson || '',
       dueDate: item.homework_duedate ? new Date(item.homework_duedate).toISOString().split('T')[0] : '',
       description: item.homework_desc || '',
-      className: item.class_name || '' 
+      className: item.homework_class || '' 
     });
     setIsModalOpen(true);
   };
@@ -46,7 +49,7 @@ export default function HomeworkTable() {
       try {
         await deleteMutation.mutateAsync(item.homework_id);
       } catch (error) {
-        alert('Error deleting homework: ' + error.message);
+        setErrorMessage('Error deleting homework: ' + error.message);
       }
     }
   };
@@ -61,8 +64,8 @@ export default function HomeworkTable() {
     e.preventDefault();
     try {
       const payload = {
-        name: formData.name,
-        teacherId: formData.teacherId,
+        name: formData.name || null,
+        teacherId: formData.teacherId || null,
         lessonId: formData.lessonId,
         dueDate: formData.dueDate,
         description: formData.description,
@@ -79,7 +82,7 @@ export default function HomeworkTable() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      alert('Error: ' + error.message);
+      setErrorMessage('Error: ' + error.message);
     }
   };
 
@@ -109,6 +112,8 @@ export default function HomeworkTable() {
         canCreate={permissions.others.create}
       />
 
+      <ErrorModal error={errorMessage} onClose={() => setErrorMessage(null)} />
+
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -122,7 +127,6 @@ export default function HomeworkTable() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
-              required
             />
           </div>
           <div>
@@ -131,7 +135,6 @@ export default function HomeworkTable() {
               value={formData.teacherId}
               onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
-              required
             >
               <option value="">Select Teacher</option>
               {teachers?.map((t) => (
@@ -189,6 +192,7 @@ export default function HomeworkTable() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
+              required
             />
           </div>
           <div className="flex justify-end space-x-3 pt-4">

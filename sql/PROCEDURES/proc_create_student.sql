@@ -9,6 +9,8 @@ CREATE OR REPLACE PROCEDURE proc_create_student(
     OUT generated_password TEXT
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_user_id INT;
@@ -31,7 +33,7 @@ BEGIN
     END IF;
 
 	IF NOT EXISTS (
-        SELECT 1 FROM class WHERE class_name = p_class
+        SELECT 1 FROM vws_classes WHERE class_name = p_class
     ) THEN
         RAISE EXCEPTION 'Class % does not exist', p_class
         USING ERRCODE = '22003';
@@ -39,7 +41,7 @@ BEGIN
 
     /* ---------- If user is provided, validate ---------- */
     IF p_user_id IS NOT NULL THEN
-        IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        IF NOT EXISTS (SELECT 1 FROM vws_users WHERE user_id = p_user_id) THEN
             RAISE EXCEPTION 'User % does not exist', p_user_id
             USING ERRCODE = '22003';
         END IF;
@@ -49,12 +51,16 @@ BEGIN
     ELSE
         /* ---------- Generate username / email / password ---------- */
 
-		v_patronym_part :=
-		    substr(
-		        translit_uk_to_lat(coalesce(p_patronym, 'xxx')),
-		        1,
-		        3
-		    );
+		IF p_patronym IS NOT NULL THEN
+		    v_patronym_part :=
+		        substr(
+		            translit_uk_to_lat(p_patronym),
+		            1,
+		            3
+		        );
+		ELSE
+		    v_patronym_part := '';
+		END IF;
 
         v_username :=
 		    translit_uk_to_lat(p_name) ||
@@ -82,7 +88,7 @@ BEGIN
         /* ---------- Assign student role ---------- */
         SELECT role_id
         INTO v_student_role_id
-        FROM roles
+        FROM vws_roles
         WHERE role_name = 'Student';
 
         IF v_student_role_id IS NULL THEN
@@ -112,5 +118,7 @@ BEGIN
 		p_class
     )
     RETURNING student_id INTO new_student_id;
+
+    CALL proc_create_audit_log('Students', 'INSERT', new_student_id::text, 'Created student');
 END;
 $$;

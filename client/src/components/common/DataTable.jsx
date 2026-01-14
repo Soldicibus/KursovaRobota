@@ -24,7 +24,7 @@ export default function DataTable({
         <h2>{title}</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {canCreate && onCreate && (
-            <button className="btn btn-primary" onClick={onCreate}>Create New</button>
+            <button className="btn btn-primary" onClick={onCreate}>Створити новий</button>
           )}
           {extraAction}
         </div>
@@ -35,7 +35,7 @@ export default function DataTable({
             {columns.map((col, index) => (
               <th key={index}>{col.header}</th>
             ))}
-            {(canEdit || canDelete || canResetPassword) && <th>Actions</th>}
+            {(canEdit || canDelete || canResetPassword) && <th>Опції</th>}
           </tr>
         </thead>
         <tbody>
@@ -54,13 +54,13 @@ export default function DataTable({
               {(canEdit || canDelete || canResetPassword) && (
                 <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
                   {canEdit && onEdit && (
-                    <button className="btn btn-small btn-edit" onClick={(e) => { e.stopPropagation(); onEdit(row); }}>Edit</button>
+                    <button className="btn btn-small btn-edit" onClick={(e) => { e.stopPropagation(); onEdit(row); }}>Редагувати</button>
                   )}
                   {canResetPassword && onResetPassword && (
-                    <button className="btn btn-small btn-warning" onClick={(e) => { e.stopPropagation(); onResetPassword(row); }}>Reset Pass</button>
+                    <button className="btn btn-small btn-warning" onClick={(e) => { e.stopPropagation(); onResetPassword(row); }}>Скинути пароль</button>
                   )}
                   {canDelete && onDelete && (
-                    <button className="btn btn-small btn-danger" onClick={(e) => { e.stopPropagation(); onDelete(row); }}>Delete</button>
+                    <button className="btn btn-small btn-danger" onClick={(e) => { e.stopPropagation(); onDelete(row); }}>Видалити</button>
                   )}
                 </td>
               )}

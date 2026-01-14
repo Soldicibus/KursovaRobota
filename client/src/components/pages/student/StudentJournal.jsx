@@ -2,6 +2,7 @@ import React from "react";
 import { useStudentDataMarks7d } from "../../../hooks/studentdata/queries/useStudentDataMarks7d";
 import { getCurrentUser } from "../../../utils/auth";
 import { useUserData } from "../../../hooks/users";
+import MonthlyGradesGrid from "../../common/MonthlyGradesGrid";
 
 function formatDate(value) {
   if (!value) return '—';
@@ -32,6 +33,7 @@ export default function StudentJournal({ studentId: propStudentId }) {
   }
 
   return (
+    <>
     <div className="card journal-card">
       {marksLoading && <div className="loading">Завантаження...</div>}
       {error && <div className="error">Помилка завантаження даних</div>}
@@ -79,8 +81,21 @@ export default function StudentJournal({ studentId: propStudentId }) {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <div style={{ fontSize: 16, fontWeight: 600 }}>{mainSubjectName}</div>
+                          {mainItem.note && (
+                            <div style={{ fontSize: 12, color: "#ffffffff", marginTop: 2, maxWidth: 150 }}>{mainItem.note}</div>
+                          )}
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 700 }}>
+                        <div 
+                          style={{ 
+                            fontSize: 20, 
+                            fontWeight: 700,
+                            color: ["П", "Присутній"].includes(mainItem.status)
+                             ? "limegreen" 
+                             : ["Н", "Не присутній"].includes(mainItem.status)
+                             ? "red"
+                             : "inherit"
+                          }}
+                        >
                           {(() => {
                             const marks = mainGroup.filter(i => i.mark != null).map(i => Number(i.mark));
                             if (marks.length > 1) {
@@ -108,15 +123,28 @@ export default function StudentJournal({ studentId: propStudentId }) {
                       <div className="journal-other-subjects">
                         <div style={{ color: '#666', marginBottom: 6 }}>Інші предмети</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-                          {otherSubjects.map((o, idx) => (
-                            <div key={idx} className="subject-card">
-                              <div style={{ fontSize: 14 }}>
-                                <div>{o.name}</div>
-                                <div style={{ color: '#666', fontSize: 12 }}>{o.items.length > 1 ? `${o.items.length} оцінки` : formatTime(o.items[0]?.lesson_date || o.items[0]?.date)}</div>
+                          {otherSubjects.map((o, idx) => {
+                            const item = o.items[0];
+                            return (
+                              <div key={idx} className="subject-card">
+                                <div style={{ fontSize: 14 }}>
+                                  <div>{o.name}</div>
+                                  <div style={{ color: '#999', fontSize: 12 }}>{o.items.length > 1 ? `${o.items.length} оцінки` : formatTime(item?.lesson_date || item?.date)}</div>
+                                  {item?.note && <div style={{ fontSize: 11, color: "#fff", marginTop: 2 }}>{item.note}</div>}
+                                </div>
+                                <div style={{ 
+                                  fontWeight: 700,
+                                  color: ["П", "Присутній"].includes(item?.status)
+                                   ? "limegreen" 
+                                   : ["Н", "Не присутній"].includes(item?.status)
+                                   ? "red"
+                                   : "inherit"
+                                }}>
+                                  {item?.mark != null ? item.mark : (item?.status || '—')}
+                                </div>
                               </div>
-                              <div style={{ fontWeight: 700 }}>{o.items[0]?.mark != null ? o.items[0].mark : (o.items[0]?.status || '—')}</div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -128,6 +156,8 @@ export default function StudentJournal({ studentId: propStudentId }) {
         })()}
       </div>
     </div>
+    <MonthlyGradesGrid studentId={studentId} />
+    </>
   );
 }
 
@@ -137,10 +167,22 @@ function formatDateShort(value) {
   try {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return String(value);
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
+
+    // Format using Europe/Kiev timezone
+    const formatter = new Intl.DateTimeFormat('uk-UA', {
+      timeZone: 'Europe/Kiev',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    
+    // We want specifically dd-mm-yyyy to match the key format expected
+    // formatter.format(d) might give "dd.mm.yyyy", so let's use parts
+    const parts = formatter.formatToParts(d);
+    const day = parts.find(p => p.type === 'day').value;
+    const month = parts.find(p => p.type === 'month').value;
+    const year = parts.find(p => p.type === 'year').value;
+    return `${day}-${month}-${year}`;
   } catch (e) {
     return String(value);
   }
@@ -162,7 +204,11 @@ function formatTime(value) {
   try {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return '';
-    return d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString('uk-UA', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'Europe/Kiev'
+    });
   } catch (e) {
     return '';
   }

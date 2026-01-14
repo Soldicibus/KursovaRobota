@@ -8,6 +8,7 @@ import { useJournals } from '../../../../hooks/journals/queries/useJournals';
 import { useTeachers } from '../../../../hooks/teachers/queries/useTeachers';
 import { useAdminPermissions } from '../../../../hooks/useAdminPermissions';
 import Modal from '../../../common/Modal';
+import ErrorModal from '../../../common/ErrorModal';
 
 export default function ClassesTable() {
   const { data: classes, isLoading } = useClasses();
@@ -19,6 +20,8 @@ export default function ClassesTable() {
 
   const { data: journals } = useJournals();
   const { data: teachers } = useTeachers();
+
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
@@ -39,7 +42,7 @@ export default function ClassesTable() {
       try {
         await deleteMutation.mutateAsync(item.class_name);
       } catch (error) {
-        alert('Error deleting class: ' + error.message);
+        setErrorMessage('Error deleting class: ' + error.message);
       }
     }
   };
@@ -57,15 +60,19 @@ export default function ClassesTable() {
         await updateMutation.mutateAsync({
           name: editingClass.class_name,
           newName: formData.name,
-          journalId: formData.journalId,
-          mainTeacherId: formData.mainTeacherId
+          journalId: formData.journalId || null,
+          mainTeacherId: formData.mainTeacherId || null
         });
       } else {
-        await createMutation.mutateAsync(formData);
+        await createMutation.mutateAsync({
+          ...formData,
+          journalId: formData.journalId || null,
+          mainTeacherId: formData.mainTeacherId || null
+        });
       }
       setIsModalOpen(false);
     } catch (error) {
-      alert('Error: ' + error.message);
+      setErrorMessage('Error: ' + error.message);
     }
   };
 
@@ -89,6 +96,8 @@ export default function ClassesTable() {
         canDelete={permissions.others.delete}
         canCreate={permissions.others.create}
       />
+      
+      <ErrorModal error={errorMessage} onClose={() => setErrorMessage(null)} />
 
       <Modal
         isOpen={isModalOpen}

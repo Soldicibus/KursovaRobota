@@ -9,6 +9,7 @@ import { useStudents } from "../../../../hooks/students/queries/useStudents";
 import { useLessons } from "../../../../hooks/lessons/queries/useLessons";
 import { useAdminPermissions } from "../../../../hooks/useAdminPermissions";
 import Modal from "../../../common/Modal";
+import ErrorModal from "../../../common/ErrorModal";
 
 export default function StudentDataTable() {
   const { data: studentData, isLoading } = useStudentData();
@@ -21,6 +22,8 @@ export default function StudentDataTable() {
   const { data: journals } = useJournals();
   const { data: students } = useStudents();
   const { data: lessons } = useLessons();
+
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingData, setEditingData] = useState(null);
@@ -36,12 +39,12 @@ export default function StudentDataTable() {
   const handleEdit = (item) => {
     setEditingData(item);
     setFormData({
-      journalId: item.data_journal || "",
-      studentId: item.data_student || "",
-      lesson: item.data_lesson || "",
-      mark: item.data_mark || "",
-      status: item.data_status || "",
-      note: item.data_note || "",
+      journalId: item.journal_id || "",
+      studentId: item.student_id || "",
+      lesson: item.lesson || "",
+      mark: item.mark || "",
+      status: item.status || "",
+      note: item.note || "",
     });
     setIsModalOpen(true);
   };
@@ -51,7 +54,7 @@ export default function StudentDataTable() {
       try {
         await deleteMutation.mutateAsync(item.data_id);
       } catch (error) {
-        alert("Error deleting student data: " + error.message);
+        setErrorMessage("Error deleting student data: " + error.message);
       }
     }
   };
@@ -76,9 +79,9 @@ export default function StudentDataTable() {
         journalId: formData.journalId,
         studentId: formData.studentId,
         lesson: formData.lesson,
-        mark: formData.mark,
-        status: formData.status,
-        note: formData.note,
+        mark: formData.mark || null,
+        status: formData.status || null,
+        note: formData.note || null,
       };
 
       if (editingData) {
@@ -91,7 +94,7 @@ export default function StudentDataTable() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      alert("Error: " + error.message);
+      setErrorMessage("Error: " + error.message);
     }
   };
 
@@ -119,6 +122,8 @@ export default function StudentDataTable() {
         canDelete={permissions.others.delete}
         canCreate={permissions.others.create}
       />
+      
+      <ErrorModal error={errorMessage} onClose={() => setErrorMessage(null)} />
 
       <Modal
         isOpen={isModalOpen}
@@ -209,6 +214,7 @@ export default function StudentDataTable() {
                 setFormData({ ...formData, status: e.target.value })
               }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
+              required
             >
               <option value="">-- Оберіть статус --</option>
               <option value="Н">Н</option>
